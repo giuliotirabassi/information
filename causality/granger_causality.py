@@ -42,11 +42,12 @@ def schwartz_criterion(x, maxdim=20):
         raise ValueError("Decrease maxdim below x.size")
     ols = OLS(intercept=False)
     s = []
-    for dim in range(1, maxdim):
+    for dim in range(1, maxdim + 1):
         X = np.stack([x[i : i + dim] for i in range(x.size - dim)])
         ols.fit(X, x[dim:])
-        r2 = ols.get_fit_result()["R2"]
-        s.append(-x.size * np.log(r2) + dim * np.log(x.size))
+        rss = ols.get_fit_result()["RSS"]
+        n = X.shape[0]
+        s.append(n * np.log(rss / n) + dim * np.log(n))
     s = (
         np.round(np.array(s) / 10) * 10
     )  # BIC should not consider significant log-likelyhood variations above 10
