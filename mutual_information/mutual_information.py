@@ -85,7 +85,7 @@ def mutual_information_discrete(series_a, series_b, alphabeth_a=None, alphabeth_
     for symb in joint_alphabeth:
         if symb not in counts_ab:
             counts_a[symb] = 0
-    h_a = BayesianEntropyCalculator(len(counts_a), counts_a).entropy
-    h_b = BayesianEntropyCalculator(len(counts_b), counts_b).entropy
-    h_ab = BayesianEntropyCalculator(len(counts_ab), counts_ab).entropy
+    h_a = BayesianEntropyCalculator(counts_a).entropy
+    h_b = BayesianEntropyCalculator(counts_b).entropy
+    h_ab = BayesianEntropyCalculator(counts_ab).entropy
     return h_a + h_b - h_ab
