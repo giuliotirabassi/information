@@ -1,5 +1,5 @@
 import numpy as np
-from information.embedding import embedding as emb
+from embedding import embedding as emb
 
 
 def test_time_delay_embedding():
