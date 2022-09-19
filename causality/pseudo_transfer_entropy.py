@@ -1,8 +1,9 @@
 import numpy as np
 from scipy.signal import detrend
+from embedding.embedding import time_delay_embedding
 
 
-def pseudo_transfer_entropy(x, y, dim=1, tau=1, normalize=False):
+def pseudo_transfer_entropy(x, y, dim=1, tau=1, emb_lag=1, normalize=False):
     """Preudo-transfer Entropy from
     R Silini, C Masoller - Scientific reports, 2021
 
@@ -30,15 +31,11 @@ def pseudo_transfer_entropy(x, y, dim=1, tau=1, normalize=False):
         y = detrend(y)
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()
-    offset = dim + tau - 1
-    n = x.size - offset
-    X = np.stack([x[i : i + dim] for i in range(n)]).T  # noqa: E203
-    assert X.shape == (dim, n)
-    Y = np.stack([y[i : i + dim] for i in range(n)]).T  # noqa: E203
+    x, X, Y = _embed_series(x, y, dim, emb_lag, tau)
     cov1 = np.cov(np.vstack((X, Y)))
     assert cov1.shape == (2 * dim, 2 * dim)
-    cov2 = np.cov(np.vstack((x[offset:], X)))
-    cov3 = np.cov(np.vstack((x[offset:], X, Y)))
+    cov2 = np.cov(np.vstack((x, X)))
+    cov3 = np.cov(np.vstack((x, X, Y)))
     cov4 = np.cov(X)
     return 0.5 * (
         np.log(np.linalg.det(cov1))
@@ -46,3 +43,13 @@ def pseudo_transfer_entropy(x, y, dim=1, tau=1, normalize=False):
         - np.log(np.linalg.det(cov3))
         - np.log(np.linalg.det(cov4) if cov4.size > 1 else cov4)
     )
+
+
+def _embed_series(x, y, dim, emb_lag, tau):
+    offset = (dim - 1) * emb_lag + tau
+    n = x.size - offset
+    X = time_delay_embedding(x, dim=dim, lag=emb_lag).T
+    Y = time_delay_embedding(y, dim=dim, lag=emb_lag).T
+    X = X[:, :n]
+    Y = Y[:, :n]
+    return x[offset:], X, Y

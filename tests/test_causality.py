@@ -55,6 +55,15 @@ def test_pseudo_transfer_entropy():
     assert m1 + s1 < m2 - s2
 
 
+def test_embed_series_pseudo_transfer():
+    x = np.arange(10)
+    y = np.arange(20, 30)
+    xx, X, Y = pseudo_transfer_entropy._embed_series(x, y, dim=2, emb_lag=3, tau=4)
+    assert np.isclose(X.T, [[0, 3], [1, 4], [2, 5]]).all()
+    assert np.isclose(Y.T, [[20, 23], [21, 24], [22, 25]]).all()
+    assert np.isclose(xx, [7, 8, 9]).all()
+
+
 def test_granger_causality():
     te1s = []
     te2s = []
