@@ -1,6 +1,7 @@
 import numpy as np
 from linear_analysis.ols import OLS
 from scipy import stats
+from embedding import embedding as emb
 
 
 def granger_causality(x, y, dim=1):
@@ -19,13 +20,15 @@ def granger_causality(x, y, dim=1):
     """
     if not dim:
         dim = schwartz_criterion(x)
-
-    X = np.stack([x[i : i + dim] for i in range(x.size - dim)])
-    Y = np.stack([y[i : i + dim] for i in range(x.size - dim)])
+    x_emb = emb.time_delay_embedding(x, dim=dim + 1, lag=1)
+    X = x_emb[:, :-1]
+    x_future = x_emb[:, -1]
+    Y = emb.time_delay_embedding(y, dim=dim, lag=1)
+    Y = Y[: x_future.size]
     assert X.shape == (x.size - dim, dim)
 
     ols = OLS()
-    ols.fit(X, x[dim:])
+    ols.fit(X, x_future)
     n, p = X.shape
     rss1 = ols.get_fit_result()["RSS"]
     ols.fit(np.hstack((X, Y)), x[dim:])
@@ -43,8 +46,10 @@ def schwartz_criterion(x, maxdim=20):
     ols = OLS(intercept=False)
     s = []
     for dim in range(1, maxdim + 1):
-        X = np.stack([x[i : i + dim] for i in range(x.size - dim)])
-        ols.fit(X, x[dim:])
+        x_emb = emb.time_delay_embedding(x, dim=dim + 1, lag=1)
+        X = x_emb[:, :-1]
+        x_future = x_emb[:, -1]
+        ols.fit(X, x_future)
         rss = ols.get_fit_result()["RSS"]
         n = X.shape[0]
         s.append(n * np.log(rss / n) + dim * np.log(n))

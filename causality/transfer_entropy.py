@@ -3,11 +3,12 @@ from sklearn.neighbors import NearestNeighbors, KDTree
 from scipy.special import digamma
 from scipy.stats import pearsonr
 import logging
+from embedding import embedding as emb
 
 logger = logging.getLogger(__name__)
 
 
-def transfer_entropy(x, y, dim=1, n_neighbors=4, normalize=True):
+def transfer_entropy(x, y, dim=1, emb_lag=1, n_neighbors=4, normalize=True):
     """    Transfer entropy based on k-nearest neighbors algorithm.
     Computes TE(y-->x) = I(y(t), x(t-1:t-dim)| y(t-1:t-dim))
     that is the mutual information between x and the past of x, conditional
@@ -24,6 +25,7 @@ def transfer_entropy(x, y, dim=1, n_neighbors=4, normalize=True):
         x (np.array): forced series
         y (np.array): forcing series
         dim (int, optional): Length of the past of x and y. Defaults to 1.
+        emb_lag (int, optional): Embedding lag of the past of `x`and `y`. Defaults to 1.
         n_neighbors (int, optional): number of neighbors point to use in the
             k-nearest-neighbors algorithm. Defaults to 4.
 
@@ -35,16 +37,14 @@ def transfer_entropy(x, y, dim=1, n_neighbors=4, normalize=True):
         y = (y - y.mean()) / y.std()
     if not dim:
         dim = compute_ragwitz_criterion(x, n_neighbors=n_neighbors)
-    x_past = []
-    y_past = []
-    for i in range(dim, x.size):
-        x_past.append(x[i - dim : i])  # noqa: E203
-        y_past.append(y[i - dim : i])  # noqa: E203
-    x_past = np.stack(x_past)
-    y_past = np.stack(y_past)
-    superspace = np.hstack((x[dim:].reshape(-1, 1), x_past, y_past))
+    x_emb = emb.time_delay_embedding(x, dim=dim + 1, lag=emb_lag)
+    x_past = x_emb[:, :-1]
+    x_future = x_emb[:, -1].reshape(-1, 1)
+    y_past = emb.time_delay_embedding(y, dim=dim, lag=emb_lag)
+    y_past = y_past[: x_future.size, :]  # crop out additional points it might have
+    superspace = np.hstack((x_future, x_past, y_past))
     past_space = np.hstack((x_past, y_past))
-    x_space = np.hstack((x[dim:].reshape(-1, 1), x_past))
+    x_space = np.hstack((x_future, x_past))
     nn = NearestNeighbors(metric="chebyshev", n_neighbors=n_neighbors)
     nn.fit(superspace)
     radii, _ = nn.kneighbors()
