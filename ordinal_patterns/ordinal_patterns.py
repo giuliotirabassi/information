@@ -123,22 +123,28 @@ class SpatialOrdinalPattern(OrdinalPattern):
         else:
             self._h_order, self._v_order = order
             self._pattern_order = self._h_order * self._v_order
+
+        if isinstance(step, int):
+            self._h_step = step
+            self._v_step = step
+        else:
+            self._h_step, self._v_step = step
         super().__init__(data, self._pattern_order, step=step)
 
     def _compute_representation(self, spatial_field):
-        max_i_diff = (self._v_order - 1) * self._step
-        max_j_diff = (self._h_order - 1) * self._step
+        max_i_diff = (self._v_order - 1) * self._v_step
+        max_j_diff = (self._h_order - 1) * self._h_step
         res = []
         for i in range(spatial_field.shape[0]):
             max_i = i + max_i_diff + 1
             if max_i > spatial_field.shape[0]:
                 continue
-            parent_chunk = spatial_field[i : max_i : self._step, :]  # noqa: E203
+            parent_chunk = spatial_field[i : max_i : self._v_step, :]  # noqa: E203
             for j in range(spatial_field.shape[1]):
                 max_j = j + max_j_diff + 1
                 if max_j > spatial_field.shape[1]:
                     continue
-                chunk = parent_chunk[:, j : max_j : self._step]  # noqa: E203
+                chunk = parent_chunk[:, j : max_j : self._h_step]  # noqa: E203
                 assert chunk.shape == (self._v_order, self._h_order)
                 if np.isnan(chunk).any():
                     continue

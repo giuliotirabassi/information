@@ -61,3 +61,10 @@ def test_spatial_ordinal_pattern():
     assert sorted(op._repr[0]) == sorted(("1234", "1234", "1234", "1243"))
     op = ordinal_patterns.compute_ordinal_patterns_representation(x, order=2, step=3)
     assert sorted(op._repr[0]) == sorted(("1234",))
+
+    op = ordinal_patterns.compute_ordinal_patterns_representation(
+        x, order=2, step=(2, 1)
+    )
+    assert sorted(op._repr[0]) == sorted(
+        ("1234", "1234", "2314", "1423", "1234", "1243")
+    )
