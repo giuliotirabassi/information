@@ -1,10 +1,18 @@
 import numpy as np
 from scipy.special import digamma, polygamma
 from scipy.integrate import quad
+from typing import Mapping
 
 
 class EntropyCalculator(object):
-    def __init__(self, counts, n_classes=None):
+    """
+    Base class for entropy calculators.
+
+    `counts` contains a map `{symbol: n_of_occurrences}`
+    `n_classes` is an `int` representing the number of possyble symbols
+    """
+
+    def __init__(self, counts: Mapping, n_classes=None):
         if n_classes is None:
             n_classes = len(counts)
         assert n_classes >= len(counts)
@@ -21,13 +29,13 @@ class BayesianEntropyCalculator(EntropyCalculator):
     """
     NSB estimator for entropy of a discrete distribution.
 
-    counts contains a map symbol: n_of_occurrences
-    n_classes is an int representing the number of possyble symbols
+    `counts` contains a map `{symbol: n_of_occurrences}`
+    `n_classes` is an `int` representing the number of possyble symbols
 
     From Nemenman et al.2002
     """
 
-    def _exp_entropy(self, beta):
+    def _exp_entropy(self, beta: float):
         pseudototal = self._total + beta * self._n_classes
         pseudocounts = self._counts_values + beta
         return (
@@ -35,7 +43,7 @@ class BayesianEntropyCalculator(EntropyCalculator):
             - (pseudocounts * digamma(pseudocounts + 1)).sum() / pseudototal
         )
 
-    def _auxiliary_ii(self, nk, ni, pseudototal):
+    def _auxiliary_ii(self, nk: int, ni: int, pseudototal: float):
         return (digamma(nk + 1) - digamma(pseudototal + 2)) * (
             digamma(ni + 1) - digamma(pseudototal + 2)
         ) - polygamma(1, pseudototal + 2)
@@ -47,7 +55,7 @@ class BayesianEntropyCalculator(EntropyCalculator):
             - polygamma(1, pseudototal + 2)
         )
 
-    def _exp_sq_entropy(self, beta):
+    def _exp_sq_entropy(self, beta: float):
         pseudototal = self._total + beta * self._n_classes
         pseudocounts = {k: v + beta for k, v in self._counts.items()}
         res = 0
@@ -59,26 +67,26 @@ class BayesianEntropyCalculator(EntropyCalculator):
                     res += ni * nk * self._auxiliary_ii(ni, nk, pseudototal)
         return res / (pseudototal * (pseudototal + 1))
 
-    def _hyperprior(self, beta):
+    def _hyperprior(self, beta: float):
         return (
             self._n_classes * polygamma(1, self._n_classes * beta + 1)
             - polygamma(1, beta + 1)
         ) / self._log_n_classes
 
-    def _kernel_entropy(self, beta):
+    def _kernel_entropy(self, beta: float):
         return self._hyperprior(beta) * self._exp_entropy(beta)
 
-    def _kernel_sq_entropy(self, beta):
+    def _kernel_sq_entropy(self, beta: float):
         return self._hyperprior(beta) * self._exp_sq_entropy(beta)
 
     @property
-    def entropy(self):
+    def entropy(self) -> float:
         if self._entropy is None:
             self._entropy = quad(self._kernel_entropy, 0, np.inf)[0]
         return self._entropy
 
     @property
-    def entropy_var(self):
+    def entropy_var(self) -> float:
         if self._entropy_var is None:
             sq_entropy = quad(self._kernel_sq_entropy, 0, np.inf)[0]
             self._entropy_var = sq_entropy - self.entropy ** 2
@@ -86,7 +94,9 @@ class BayesianEntropyCalculator(EntropyCalculator):
 
 
 class ClassicalEntropyCalculator(EntropyCalculator):
+    """Plug-in estimator of entropy given counts"""
+
     @property
-    def entropy(self):
+    def entropy(self) -> float:
         ps = [c / self._total for c in self._counts.values()]
         return -sum(p * np.log(p) for p in ps)

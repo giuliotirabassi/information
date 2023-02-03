@@ -38,7 +38,7 @@ def granger_causality(x, y, dim=1):
     return f, p
 
 
-def schwartz_criterion(x, maxdim=20):
+def schwartz_criterion(x, maxdim=20) -> int:
     """Bayesian information criterion for the dimension of AR modelling
     of time series `x`."""
     if x.size <= maxdim:

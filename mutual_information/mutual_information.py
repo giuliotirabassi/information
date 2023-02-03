@@ -5,11 +5,12 @@ from sklearn.neighbors import NearestNeighbors, KDTree
 from scipy.special import digamma
 from collections import Counter
 from entropy.entropy import BayesianEntropyCalculator
+from typing import Iterable
 
 logger = logging.getLogger(__name__)
 
 
-def mutual_information_continuous(*args, n_neighbors=4):
+def mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> float:
     """Mutual information of the args computed using k-nearest-neighbors
     algorithm with k = n_neighbors.
 
@@ -47,7 +48,9 @@ def mutual_information_continuous(*args, n_neighbors=4):
     return digamma(n_neighbors) + digamma(n_samples) - np.sum(digammas)
 
 
-def mutual_information_discrete(series_a, series_b, alphabeth_a=None, alphabeth_b=None):
+def mutual_information_discrete(
+    series_a: Iterable, series_b: Iterable, alphabeth_a=None, alphabeth_b=None
+) -> float:
     """Calcolation of mutual information between two symbolic time series. According to
     Archer at al. 2013 the best estimator seems to be the sum of the bayesian estimators
     of the entropies. For each series an alphabeth can be supplied. If the alphabeth
@@ -89,3 +92,23 @@ def mutual_information_discrete(series_a, series_b, alphabeth_a=None, alphabeth_
     h_b = BayesianEntropyCalculator(counts_b).entropy
     h_ab = BayesianEntropyCalculator(counts_ab).entropy
     return h_a + h_b - h_ab
+
+
+def conditional_mutual_information_continuous(
+    x: Iterable, y: Iterable, z: Iterable, **kwargs
+) --> float:
+    """Returns conditional mutal information between x and y given z as possible confounding factor.
+    If z influences both y and x, it will be less than the mutual information between x and y.
+    If z is synergetic, it will be higher than the mutual information between x and y
+
+    Args:
+        x (Iterable): first series of values from p(x)
+        y (Iterable): second series of values from p(y)
+        z (Iterable): confounding factor values from p(z)
+
+    Returns:
+        float: conditional mutual information I(x, y | z)
+    """
+    return mutual_information_continuous(
+        x, y, **kwargs
+    ) - mutual_information_continuous(x, y, z, **kwargs)

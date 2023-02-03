@@ -3,6 +3,7 @@ from scipy.stats import pearsonr, multivariate_normal
 from mutual_information.mutual_information import (
     mutual_information_continuous,
     mutual_information_discrete,
+    conditional_mutual_information_continuous,
 )
 
 random = np.random.RandomState(0)
@@ -24,3 +25,14 @@ def test_mutual_information_discrete():
     mi = mutual_information_discrete(a, b)
     assert -1e-5 < mi < 1e-5
     assert mutual_information_discrete(a, a) > 0
+
+
+def test_mutual_information():
+    s = multivariate_normal(mean=[0, 0], cov=[[1, 0.9], [0.9, 1]], seed=42).rvs(
+        size=100000
+    )
+    a = s[:, 0]
+    b = s[:, 1]
+    c = random.normal(size=100000)
+    theor = -0.5 * np.log(1 - pearsonr(a, b)[0] ** 2)
+    assert (conditional_mutual_information_continuous(a, b, c) - theor) / theor < 0.001
