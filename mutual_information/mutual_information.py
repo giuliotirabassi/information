@@ -30,6 +30,7 @@ def mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> f
         float: mutual information between the arguments
     """
     args = [x.reshape((-1, 1)) for x in args]
+    n_vars = len(args)
     xx = np.hstack(args)
     n_samples = xx.shape[0]
     nn = NearestNeighbors(metric="chebyshev", n_neighbors=n_neighbors)
@@ -45,7 +46,7 @@ def mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> f
             nx
         )  # here would go a -1 but we have to sum 1 in the final formula so omit it
     digammas = [np.mean(digamma(nx)) for nx in ns]
-    return digamma(n_neighbors) + digamma(n_samples) - np.sum(digammas)
+    return digamma(n_neighbors) + (n_vars - 1) * digamma(n_samples) - np.sum(digammas)
 
 
 def mutual_information_discrete(
@@ -96,9 +97,11 @@ def mutual_information_discrete(
 
 def conditional_mutual_information_continuous(
     x: Iterable, y: Iterable, z: Iterable, **kwargs
-) --> float:
-    """Returns conditional mutal information between x and y given z as possible confounding factor.
-    If z influences both y and x, it will be less than the mutual information between x and y.
+) -> float:
+    """Returns conditional mutal information between x and y given z as possible
+    confounding factor.
+    If z influences both y and x, it will be less than the mutual information
+    between x and y.
     If z is synergetic, it will be higher than the mutual information between x and y
 
     Args:

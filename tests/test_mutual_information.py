@@ -27,7 +27,7 @@ def test_mutual_information_discrete():
     assert mutual_information_discrete(a, a) > 0
 
 
-def test_mutual_information():
+def test_conditional_mutual_information():
     s = multivariate_normal(mean=[0, 0], cov=[[1, 0.9], [0.9, 1]], seed=42).rvs(
         size=100000
     )
@@ -35,4 +35,4 @@ def test_mutual_information():
     b = s[:, 1]
     c = random.normal(size=100000)
     theor = -0.5 * np.log(1 - pearsonr(a, b)[0] ** 2)
-    assert (conditional_mutual_information_continuous(a, b, c) - theor) / theor < 0.001
+    assert (conditional_mutual_information_continuous(a, b, c) - theor) / theor < 0.0001
