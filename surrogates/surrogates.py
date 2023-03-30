@@ -64,7 +64,7 @@ def fourier_transform_surrogate(x, random_state=None):
     random_phases = random_state.uniform(0, np.pi, ts_fourier.size)
     random_phases[0] = 0  # only randomize phases of the periodic terms
     ts_fourier_new = ts_fourier * np.exp(random_phases * 1j)
-    surr = np.fft.irfft(ts_fourier_new)
+    surr = np.fft.irfft(ts_fourier_new, x.size)
     return surr
 
 
