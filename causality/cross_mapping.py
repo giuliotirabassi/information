@@ -39,6 +39,20 @@ def _compute_cross_mapping(x, y, dim, lag):
 
 
 def partial_cross_mapping(x, y, z, dim, maxlag):
+    """Partial CrossMapping From Leng et al. 2020 Nat. Comm.
+    Cross mapping Y -> X conditioning out the Y -> Z -> X case.
+    Unlike convergent_cross_mapping has no p-value.
+
+    Args:
+        x (array): Slave series
+        y (array): Master series
+        z (array): Intermediary series
+        dim (int): Embedding dimension of `x`
+        maxlag (int): Maximum lag to span in the intermediate mappings
+
+    Returns:
+        float: partial cross mapping of Y onto X
+    """
     zhat = _find_most_correlated_mapping(x, z, dim, maxlag)
     yhathat = _find_most_correlated_mapping(zhat, y, dim, maxlag)
     yhat = _find_most_correlated_mapping(x, y, dim, maxlag)
