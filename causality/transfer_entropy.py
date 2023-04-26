@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.neighbors import NearestNeighbors, KDTree
 from scipy.special import digamma
-from scipy.stats import pearsonr
 import logging
 from embedding import embedding as emb
 
@@ -36,7 +35,7 @@ def transfer_entropy(x, y, dim=1, emb_lag=1, n_neighbors=4, normalize=True):
         x = (x - x.mean()) / x.std()
         y = (y - y.mean()) / y.std()
     if not dim:
-        dim = compute_ragwitz_criterion(x, n_neighbors=n_neighbors)
+        dim = emb.compute_ragwitz_criterion(x, n_neighbors=n_neighbors)
     x_emb = emb.time_delay_embedding(x, dim=dim + 1, lag=emb_lag)
     x_past = x_emb[:, :-1]
     x_future = x_emb[:, -1].reshape(-1, 1)
@@ -67,72 +66,3 @@ def transfer_entropy(x, y, dim=1, emb_lag=1, n_neighbors=4, normalize=True):
     return digamma(n_neighbors) + np.mean(
         digamma(n_xpast) - digamma(n_past) - digamma(n_x)
     )
-
-
-def compute_ragwitz_criterion(x, max_dim=10, n_neighbors=4, verbose=False):
-    """Returns the optimal embedding dimension using Ragwitz criterion
-
-    Reference:
-        Ragwitz and Kantz (2002). PRE, 65
-
-    Args:
-        x (nd.array): input time series
-        max_dim (int, optional): Maximum embedding dimension. Defaults to 10.
-        n_neighbors (int, optional): Number of neigbours to use to determine
-            the optimal dimension. Defaults to 4.
-
-    Returns:
-        int: Optimum embedding dimension
-    """
-    errors = []
-    for dim in range(1, max_dim + 1):
-        x_past = []
-        for i in range(dim, x.size):
-            x_past.append(x[i - dim : i])  # noqa: E203
-        x_past = np.stack(x_past)
-        x_future = x[dim:]
-        kdt_xpast = KDTree(x_past, metric="euclidean")
-        indices = kdt_xpast.query(x_past, k=n_neighbors, return_distance=False)
-        indices = indices[:, 1:]  # discarding the point itself
-        prediction = x_future[indices].mean(axis=1)
-        error = ((prediction - x_future) ** 2).mean() ** 0.5
-        errors.append(error)
-    dim = np.argmin(errors) + 1
-    if dim == max_dim:
-        logger.warning(
-            "The result is max_dim: consider increasing the max_dim input value"
-        )
-    if verbose:
-        print(errors)
-    return dim
-
-
-def compute_autocorrelation_criterion(x, criterion="zero"):
-    """Compute the autocorrelation length of `x`. If `criterion`is "zero",
-    the autocorrelation lenght is the lag at which the autocorrelation becomes
-    negative for the first time. If `criterion`is "min" the autocorrelation
-    length is the lag for which the series autocorrelation has the first local minimum.
-    Note that "min" is rather unstable.
-
-    Args:
-        x (nd.array): time series equally sampled
-        criterion (str, optional): Criterion to choose the autocorrelation
-            length. Defaults to "zero".
-
-    Raises:
-        ValueError: If the criterion is not either zero or min
-
-    Returns:
-        int: autocorrelation length
-    """
-    if criterion not in {"zero", "min"}:
-        raise ValueError("Unknown value for criterion: try either 'zero' or 'min'")
-    old_r = 1
-    for i in range(1, x.size):
-        r, _ = pearsonr(x[i:], x[:-i])
-        if criterion == "zero" and r < 0:
-            return i
-        elif criterion == "min" and r > old_r and r < 0:
-            return i - 1
-        old_r = r
-    return None
