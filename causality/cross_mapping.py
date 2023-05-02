@@ -4,13 +4,18 @@ import numpy as np
 from scipy.stats import pearsonr
 
 
-def convergent_cross_mapping(y, x, dim=2, lag=1):
+def convergent_cross_mapping(x, y, dim=2, lag=1):
     """Convergent Cross Mapping testing x --> y.
     The first argument is the slave variable. The second argument
     is the master variable. Based on
     Sugihara, G. et al., 2012. Science
     and
     https://phdinds-aim.github.io/time_series_handbook/06_ConvergentCrossMappingandSugiharaCausality/ccm_sugihara.html
+    It is called convergent cross mapping because its output
+    should converge to 1 as the length of the time series in
+    increased if there is a real causation `x` --> `y`.
+    The idea is that if `x` causes `y`, the we can use the shadow
+    manifold of `y` to predict `x`.
 
     Args:
         y (array like): slave variable
@@ -29,6 +34,7 @@ def convergent_cross_mapping(y, x, dim=2, lag=1):
 
 
 def _compute_cross_mapping(x, y, dim, lag):
+    """Use the embedding of `x` to predict `y`."""
     X = time_delay_embedding(x, dim=dim, lag=lag)
     neigh = NearestNeighbors(n_neighbors=dim + 1, radius=np.inf).fit(X)
     distances, neigh_index = neigh.kneighbors(return_distance=True)
@@ -84,6 +90,7 @@ def _find_most_correlated_mapping(x, z, dim, maxlag):
 
 
 if __name__ == "__main__":
+    print("#### INTEGRATION TEST FOR PARTIAL CROSS MAPPING")
     rx = 3.6
     ry = 3.72
     rz = 3.68
@@ -106,5 +113,36 @@ if __name__ == "__main__":
         )
     E = 4
     tau = 1
+    print("First value should be way lower than second")
     print(partial_cross_mapping(Y, X, Z, dim=E, maxlag=10))
     print(convergent_cross_mapping(Y, X, dim=E, lag=1))
+
+    print("#### INTEGRATION TEST FOR CONVERGENT CROSS MAPPING")
+
+    def func_1(A, B, r, beta):
+        return A * (r - r * A - beta * B)
+
+    # Initialize test dataset
+    # params
+    r_x = 3.7
+    r_y = 3.7
+    B_xy = 0  # effect on x given y (effect of y on x)
+    B_yx = 0.32  # effect on y given x (effect of x on y)
+
+    X0 = 0.2  # initial val following Sugihara et al
+    Y0 = 0.4  # initial val following Sugihara et al
+    t = 5000  # time steps
+
+    X = [X0]
+    Y = [Y0]
+    for i in range(t):
+        X_ = func_1(X[-1], Y[-1], r_x, B_xy)
+        Y_ = func_1(Y[-1], X[-1], r_y, B_yx)
+        X.append(X_)
+        Y.append(Y_)
+    print("Left column should converge to 1, right column should go to 0")
+    for i in [50, 100, 200, 300, 500, 1000, 3000, 5000]:
+        print(
+            convergent_cross_mapping(Y[:i], X[:i], dim=E, lag=1)[0],
+            convergent_cross_mapping(X[:i], Y[:i], dim=E, lag=1)[0],
+        )
