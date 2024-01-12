@@ -109,46 +109,41 @@ class SpatialOrdinalPattern(OrdinalPattern):
         that the ordinal pattern will be formed using consecutive values.
     """
 
-    def __init__(self, data, order=3, step=1):
+    def __init__(self, data, order=3, step=1, mask=None):
         if not isinstance(data, np.ndarray):
             data = np.array(data)
 
         if len(data.shape) != 2:
             raise ValueError("Input spatial field must be 2D")
 
-        if isinstance(order, int):
-            self._h_order = order
-            self._v_order = order
-            self._pattern_order = order * order
-        else:
-            self._h_order, self._v_order = order
-            self._pattern_order = self._h_order * self._v_order
+        if mask is None:
+            if isinstance(order, int):
+                nh = nv = order
+            else:
+                nh, nv = order
 
         if isinstance(step, int):
-            self._h_step = step
-            self._v_step = step
+            h_step = v_step = step
         else:
-            self._h_step, self._v_step = step
-        super().__init__(data, self._pattern_order, step=step)
+            h_step, v_step = step
+
+        mask = np.zeros(((nv - 1) * v_step + 1, (nh - 1) * h_step + 1))
+        for i in range(0, mask.shape[0], v_step):
+            for j in range(0, mask.shape[1], h_step):
+                mask[i, j] = 1
+
+        self._mask = mask
+        self._pattern_order = np.sum(mask)
+        super().__init__(data, order=self._pattern_order, step=step)
 
     def _compute_representation(self, spatial_field):
-        max_i_diff = (self._v_order - 1) * self._v_step
-        max_j_diff = (self._h_order - 1) * self._h_step
+        view = np.lib.stride_tricks.sliding_window_view(
+            spatial_field, self._mask.shape
+        ).reshape(-1, *self._mask.shape)
+        idx = np.where(self._mask)
         res = []
-        for i in range(spatial_field.shape[0]):
-            max_i = i + max_i_diff + 1
-            if max_i > spatial_field.shape[0]:
-                continue
-            parent_chunk = spatial_field[i : max_i : self._v_step, :]  # noqa: E203
-            for j in range(spatial_field.shape[1]):
-                max_j = j + max_j_diff + 1
-                if max_j > spatial_field.shape[1]:
-                    continue
-                chunk = parent_chunk[:, j : max_j : self._h_step]  # noqa: E203
-                assert chunk.shape == (self._v_order, self._h_order)
-                if np.isnan(chunk).any():
-                    continue
-                res.append(_determine_ordinal_pattern(chunk.ravel()))
+        for v in view:
+            res.append(_determine_ordinal_pattern(v[idx]))
         return (tuple(res),)
 
 
