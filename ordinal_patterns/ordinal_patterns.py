@@ -17,7 +17,7 @@ class OrdinalPattern(object):
         raise NotImplementedError("This method is not implemented")
 
     def _compute_alphabeth(self):
-        symbols = np.arange(1, self._order + 1)
+        symbols = np.arange(1, self._order + 1).astype(int)
         alphabeth = []
         for perm in permutations(symbols):
             alphabeth.append("".join([str(x) for x in perm]))
@@ -133,7 +133,7 @@ class SpatialOrdinalPattern(OrdinalPattern):
                 mask[i, j] = 1
 
         self._mask = mask
-        self._pattern_order = np.sum(mask)
+        self._pattern_order = int(np.sum(mask))
         super().__init__(data, order=self._pattern_order, step=step)
 
     def _compute_representation(self, spatial_field):
