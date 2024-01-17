@@ -10,7 +10,14 @@ from typing import Iterable
 logger = logging.getLogger(__name__)
 
 
-def mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> float:
+def mutual_information_continuous(x, y, normalize=False, **kwargs):
+    if normalize:
+        x = (x - x.mean()) / x.std()
+        y = (y - y.mean()) / y.std()
+    return _mutual_information_continuous(x, y, **kwargs)
+
+
+def _mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> float:
     """Mutual information of the args computed using k-nearest-neighbors
     algorithm with k = n_neighbors.
 
@@ -29,9 +36,12 @@ def mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> f
     Returns:
         float: mutual information between the arguments
     """
-    args = [x.reshape((-1, 1)) for x in args]
+    args = [x.reshape((-1, 1)) if len(x.shape) == 1 else x for x in args]
     n_vars = len(args)
-    xx = np.hstack(args)
+    try:
+        xx = np.hstack(args)
+    except ValueError:
+        raise ValueError("Input arguments' dimensions do not match. Try transposing.")
     n_samples = xx.shape[0]
     nn = NearestNeighbors(metric="chebyshev", n_neighbors=n_neighbors)
     nn.fit(xx)
@@ -96,7 +106,7 @@ def mutual_information_discrete(
 
 
 def conditional_mutual_information_continuous(
-    x: Iterable, y: Iterable, z: Iterable, **kwargs
+    x: Iterable, y: Iterable, z: Iterable, n_neighbors=4
 ) -> float:
     """Returns conditional mutal information between x and y given z as possible
     confounding factor.
@@ -108,10 +118,30 @@ def conditional_mutual_information_continuous(
         x (Iterable): first series of values from p(x)
         y (Iterable): second series of values from p(y)
         z (Iterable): confounding factor values from p(z)
+        n_neighbors (int): default 4
 
     Returns:
         float: conditional mutual information I(x, y | z)
+
+    Reference:
+        Frenzel and Pompe, (2007) Phys. Rev. Lett.
     """
-    return mutual_information_continuous(
-        x, y, **kwargs
-    ) - mutual_information_continuous(x, y, z, **kwargs)
+    xyz = np.stack((x, y, z)).T
+    nn = NearestNeighbors(metric="chebyshev", n_neighbors=n_neighbors)
+    nn.fit(xyz)
+    radii, _ = nn.kneighbors()
+    radius = np.nextafter(radii[:, -1], 0)  # to ensure we only count less than
+    xz = np.stack((x, z)).T
+    yz = np.stack((y, z)).T
+    kd = KDTree(xz, metric="chebyshev")
+    nxz = (
+        kd.query_radius(xz, radius, count_only=True, return_distance=False) - 1
+    )  # minus one to not count dist=0
+    kd = KDTree(yz, metric="chebyshev")
+    nyz = kd.query_radius(yz, radius, count_only=True, return_distance=False) - 1
+    zz = z.reshape((-1, 1))
+    kd = KDTree(zz, metric="chebyshev")
+    nz = kd.query_radius(zz, radius, count_only=True, return_distance=False) - 1
+    maxn = max(max(nz), max(nyz), max(nxz))
+    hn = -np.cumsum(1 / np.arange(1, maxn + 1))
+    return np.mean(hn[nyz - 1] + hn[nxz - 1] - hn[nz - 1]) - hn[n_neighbors - 2]

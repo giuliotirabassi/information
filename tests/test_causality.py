@@ -1,4 +1,5 @@
 from causality import transfer_entropy, pseudo_transfer_entropy, granger_causality
+from embedding import embedding
 import numpy as np
 
 random = np.random.RandomState(0)
@@ -28,9 +29,9 @@ def test_transfer_entropy():
 def test_autocorrelation_criterion():
     t = np.linspace(0, 20 * np.pi, 10000)
     x = np.sin(t)
-    lag = transfer_entropy.compute_autocorrelation_criterion(x)
+    lag = embedding.compute_autocorrelation_criterion(x)
     assert np.isclose(t[lag], np.pi / 2, rtol=0.05)
-    lag = transfer_entropy.compute_autocorrelation_criterion(x, criterion="min")
+    lag = embedding.compute_autocorrelation_criterion(x, criterion="min")
     assert np.isclose(t[lag], np.pi, rtol=0.05)
 
 
