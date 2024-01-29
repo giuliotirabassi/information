@@ -122,15 +122,15 @@ class SpatialOrdinalPattern(OrdinalPattern):
             else:
                 nh, nv = order
 
-        if isinstance(step, int):
-            h_step = v_step = step
-        else:
-            h_step, v_step = step
+            if isinstance(step, int):
+                h_step = v_step = step
+            else:
+                h_step, v_step = step
 
-        mask = np.zeros(((nv - 1) * v_step + 1, (nh - 1) * h_step + 1))
-        for i in range(0, mask.shape[0], v_step):
-            for j in range(0, mask.shape[1], h_step):
-                mask[i, j] = 1
+            mask = np.zeros(((nv - 1) * v_step + 1, (nh - 1) * h_step + 1))
+            for i in range(0, mask.shape[0], v_step):
+                for j in range(0, mask.shape[1], h_step):
+                    mask[i, j] = 1
 
         self._mask = mask
         self._pattern_order = int(np.sum(mask))
