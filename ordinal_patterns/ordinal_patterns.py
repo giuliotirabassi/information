@@ -97,16 +97,22 @@ class SpatialOrdinalPattern(OrdinalPattern):
     an integer `n`, the ordinal patterns will be formed using squares of `n x n` points.
     If order is a tuple `(n, m)` the ordinal pattern will be formed using rectangles
     of `n x m` points, where `n` is the horizontal index and `m` the vertical one.
+    Alternatively, the parameter `mask`can be specified as an array of 1s and 0s (or
+    True and False) to represent a particular shape to select the values. For example,
+    to select values in a "L" shape, use `mask = [[1, 0], [1, 1]]`.
 
     Parameters
     ----------
-    data : `iterable``
+    data : `iterable`
         Spatial field
     order : `int` or `tuple`
         Length of the ordinal patterns
-    step : `int``
+    step : `int`
         Distance between each elements of the ordinal pattern. `step = 1` means
         that the ordinal pattern will be formed using consecutive values.
+    mask: `array`-like
+        Mask representing the sape of the ordinal pattern. Zeros/False (Ones/True)
+        are non-selected (selected) values.
     """
 
     def __init__(self, data, order=3, step=1, mask=None):
