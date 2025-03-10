@@ -149,6 +149,8 @@ class SpatialOrdinalPattern(OrdinalPattern):
         idx = np.where(self._mask)
         res = []
         for v in view:
+            if np.any(np.isnan(v[idx])):
+                continue
             res.append(_determine_ordinal_pattern(v[idx]))
         return (tuple(res),)
 
