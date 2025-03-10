@@ -4,7 +4,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def block_surrogate(x, block_dim=1, random_state=None):
+def block_surrogate(x, block_dim=1, random_state=None, replacement=True):
     """Make a block surrogate of time series x with block
     dimension `block_dim`. Blocks are samples with replacement.
 
@@ -20,9 +20,13 @@ def block_surrogate(x, block_dim=1, random_state=None):
     if random_state is None:
         random_state = np.random.RandomState()
     n_blocks = int(np.ceil(x.size / block_dim))
-    possible_block_heads = range(x.size - block_dim)
-    idx = random_state.choice(possible_block_heads, size=n_blocks)
-    surr = [x[i : i + block_dim] for i in idx]  # noqa: E203
+    if replacement:
+        possible_block_heads = range(x.size - block_dim)
+        idx = random_state.choice(possible_block_heads, size=n_blocks)
+        surr = [x[i : i + block_dim] for i in idx]  # noqa: E203
+    else:
+        blocks = np.array_split(x, n_blocks)
+        surr = random_state.shuffle(blocks)
     return np.hstack(surr)[: x.size]
 
 
@@ -100,7 +104,7 @@ def iterative_fourier_transform_surrogate(
     for i in range(maxiter):
         shuff_spect = np.fft.rfft(x_copy)
         new_err = ((np.abs(shuff_spect) - np.abs(ts_fourier)) ** 2).sum() / (
-            abs_s ** 2
+            abs_s**2
         ).sum()
         shuff_spect_angle = np.angle(shuff_spect)
         shuff_spect = abs_s * np.exp(shuff_spect_angle * 1j)
