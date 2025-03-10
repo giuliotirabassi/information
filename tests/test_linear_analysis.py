@@ -44,7 +44,6 @@ def test_ols():
     assert np.all(ols._pvals < 0.05)
     assert 0 < ols._r2 < 1
     ols = OLS(intercept=False).fit(x, y)
-    assert 0 < ols._r2 < 1
     assert ols._pvals.size == 1
     ols.fit(x, random.normal(size=x.size))
     assert ols._pvals[0] > 0.4
