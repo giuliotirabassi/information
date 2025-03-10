@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def transfer_entropy(x, y, dim=1, emb_lag=1, n_neighbors=4, normalize=True):
-    """    Transfer entropy based on k-nearest neighbors algorithm.
+    """Transfer entropy based on k-nearest neighbors algorithm.
     Computes TE(y-->x) = I(y(t), x(t-1:t-dim)| y(t-1:t-dim))
     that is the mutual information between x and the past of x, conditional
     to the past of y. If dim is not specified (None), it will be computed using
@@ -27,6 +27,8 @@ def transfer_entropy(x, y, dim=1, emb_lag=1, n_neighbors=4, normalize=True):
         emb_lag (int, optional): Embedding lag of the past of `x`and `y`. Defaults to 1.
         n_neighbors (int, optional): number of neighbors point to use in the
             k-nearest-neighbors algorithm. Defaults to 4.
+        normalize (bool, optional): whether to normalize the input at 0 mean and 1 STD.
+            Defaults to `True`.
 
     Returns:
         float: transfer entropy from y to x
