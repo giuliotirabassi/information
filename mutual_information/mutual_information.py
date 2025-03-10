@@ -60,7 +60,11 @@ def _mutual_information_continuous(*args: Iterable[Iterable], n_neighbors=4) -> 
 
 
 def mutual_information_discrete(
-    series_a: Iterable, series_b: Iterable, alphabeth_a=None, alphabeth_b=None
+    series_a: Iterable,
+    series_b: Iterable,
+    alphabeth_a=None,
+    alphabeth_b=None,
+    return_variance=False,
 ) -> float:
     """Calcolation of mutual information between two symbolic time series. According to
     Archer at al. 2013 the best estimator seems to be the sum of the bayesian estimators
@@ -75,6 +79,8 @@ def mutual_information_discrete(
         series_b (iterable): Second series
         alphabeth_a (set, optional): Alphabeth of first series. Defaults to None.
         alphabet_b (set, optional): Alphabet of second series. Defaults to None.
+        return_variance (bool, optional): whether to return the variance of the
+            estimator. Defaults to False.
 
     Returns:
         float: MI between `series_a` and `series_b`
@@ -99,10 +105,19 @@ def mutual_information_discrete(
     for symb in joint_alphabeth:
         if symb not in counts_ab:
             counts_a[symb] = 0
-    h_a = BayesianEntropyCalculator(counts_a).entropy
-    h_b = BayesianEntropyCalculator(counts_b).entropy
-    h_ab = BayesianEntropyCalculator(counts_ab).entropy
-    return h_a + h_b - h_ab
+    bec_a = BayesianEntropyCalculator(counts_a)
+    h_a = bec_a.entropy
+    bec_b = BayesianEntropyCalculator(counts_b)
+    h_b = bec_b.entropy
+    bec_ab = BayesianEntropyCalculator(counts_ab)
+    h_ab = bec_ab.entropy
+    mi = h_a + h_b - h_ab
+    if return_variance:
+        var_a = bec_a.entropy_var
+        var_b = bec_b.entropy_var
+        var_ab = bec_ab.entropy_var
+        return mi, var_a + var_b + var_ab
+    return mi
 
 
 def conditional_mutual_information_continuous(
