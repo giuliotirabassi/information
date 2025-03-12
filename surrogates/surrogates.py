@@ -17,17 +17,17 @@ def block_surrogate(x, block_dim=1, random_state=None, replacement=True):
     Returns:
         np.array: block surrogate of x
     """
-    if random_state is None:
-        random_state = np.random.RandomState()
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
     n_blocks = int(np.ceil(x.size / block_dim))
     if replacement:
         possible_block_heads = range(x.size - block_dim)
         idx = random_state.choice(possible_block_heads, size=n_blocks)
-        surr = [x[i : i + block_dim] for i in idx]  # noqa: E203
+        blocks = [x[i : i + block_dim] for i in idx]  # noqa: E203
     else:
         blocks = np.array_split(x, n_blocks)
-        surr = random_state.shuffle(blocks)
-    return np.hstack(surr)[: x.size]
+        random_state.shuffle(blocks)
+    return np.hstack(blocks)[: x.size]
 
 
 def time_shift_surrogates(x, min_shift=1, random_state=None):
@@ -42,8 +42,8 @@ def time_shift_surrogates(x, min_shift=1, random_state=None):
     Returns:
         nd.array: time shift surrogate of `x`.
     """
-    if random_state is None:
-        random_state = np.random.RandomState()
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
     if isinstance(random_state, int):
         random_state = np.random.RandomState(random_state)
     i = random_state.randint(min_shift, x.size - 1)
@@ -62,8 +62,8 @@ def fourier_transform_surrogate(x, random_state=None):
     Returns:
         nd.array: FT surrogate of x
     """
-    if random_state is None:
-        random_state = np.random.RandomState()
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
     ts_fourier = np.fft.rfft(x)
     random_phases = random_state.uniform(0, np.pi, ts_fourier.size)
     random_phases[0] = 0  # only randomize phases of the periodic terms
@@ -93,8 +93,8 @@ def iterative_fourier_transform_surrogate(
     Returns:
         nd.array: FT surrogate of x
     """
-    if random_state is None:
-        random_state = np.random.RandomState()
+    if not isinstance(random_state, np.random.RandomState):
+        random_state = np.random.RandomState(random_state)
     x_copy = x.copy()
     ts_fourier = np.fft.rfft(x)
     abs_s = np.abs(ts_fourier)

@@ -46,3 +46,15 @@ def test_rank_array():
     x = np.array([3, 5, 7, 1, 6])
     rank = surrogates.rank_array(x)
     assert (rank == [1, 2, 4, 0, 3]).all()
+
+
+def test_block_surrogates():
+    x = np.array([1, 2, 3, 4, 5, 6, 7, 8])
+    surr = surrogates.block_surrogate(x, block_dim=2)
+    assert len(surr) == len(x)
+    assert set(surr).intersection(set(x)) == set(surr)
+    surr = surrogates.block_surrogate(x, block_dim=3, replacement=False, random_state=0)
+    assert not np.all(surr == x)
+    assert set(surr) == set(x)
+    assert np.all(np.sort(surr) == np.sort(x))
+    assert len(x) == len(surr)
