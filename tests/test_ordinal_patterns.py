@@ -31,7 +31,10 @@ def test_temporal_ordinal_patterns():
         "12 -> 21",
     )
     td = op.compute_transition_distribution()
-    assert isinstance(td, discrete_distributions.DiscreteDistribution,)
+    assert isinstance(
+        td,
+        discrete_distributions.DiscreteDistribution,
+    )
     assert td._counts["12 -> 12"] == 3
     assert td._counts["21 -> 21"] == 0
     assert td._counts["12 -> 21"] == 1
@@ -44,6 +47,7 @@ def test_temporal_ordinal_patterns():
     op = ordinal_patterns.compute_ordinal_patterns_representation(x, order=3, step=2)
     print(op._repr)
     assert op._repr == (("123",), ("123",))
+    assert op.flattened_representation() == ["123", "123"]
 
 
 def test_spatial_ordinal_pattern():

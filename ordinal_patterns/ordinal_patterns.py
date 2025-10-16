@@ -25,10 +25,11 @@ class OrdinalPattern(object):
         return tuple(alphabeth)
 
     def compute_symbol_distributinon(self):
-        flatten_list = []
-        for ll in self._repr:
-            flatten_list.extend(ll)
+        flatten_list = self.flattened_representation()
         return DiscreteDistribution(flatten_list, self._alphabeth)
+
+    def flattened_representation(self):
+        return [el for ll in self._repr for el in ll]
 
 
 def _determine_ordinal_pattern(chunk):
@@ -85,9 +86,6 @@ class TemporalOrdinalPattern(OrdinalPattern):
             "%s -> %s" % p for p in product(self._alphabeth, self._alphabeth)
         ]
         return DiscreteDistribution(self._compute_transitions(), transitions_alphabeth)
-
-    def flattened_representation(self):
-        return [el for ll in self._repr for el in ll]
 
 
 class SpatialOrdinalPattern(OrdinalPattern):
